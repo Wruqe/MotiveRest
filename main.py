@@ -22,11 +22,22 @@ def get_activities():
     activities = activity_agent.find_activities(location, preferences, budget)
     return jsonify({'activities': activities})
 
-@app.route('/api/chatbot', methods=['POST'])
-def chatbot():
-    user_input = request.json.get('message')
-    response = generate_chat_response(user_input)
-    return jsonify({'response': response})
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        # Parse the incoming JSON request body
+        data = request.json
+        print('Received data:', data)
 
+        # Generate chat response using OpenAI
+        response = generate_chat_response(data)
+        return jsonify({'message': response})
+
+    except Exception as e:
+        # Return any errors as a response
+        return jsonify({
+            'error': f'Something went wrong. Details: {str(e)}'
+        }), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)
