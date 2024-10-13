@@ -71,6 +71,41 @@ def get_activities():
 
 
 
+@app.route('/api/profile/update', methods=['POST'])
+def update_profile():
+    data = request.json
+
+    print(data)
+    # Ensure firstName and lastName are in the request body
+    first_name = data.get('firstName')
+    last_name = data.get('lastName')
+    print(first_name, last_name)
+
+    if not first_name or not last_name:
+        return jsonify({"message": "First name and last name are required."}), 400
+
+    # Assuming you have a user_id or email to identify the user
+    user_id = data.get('userId') 
+    print(user_id)
+
+    if not user_id:
+        return jsonify({"message": "User ID is required to update profile."}), 400
+
+    # Update the user's profile in the 'profiles' table (adjust table name if needed)
+    try:
+        response = supabase.table('profiles').update({
+            'first_name': first_name,
+            'last_name': last_name
+        }).eq('user_id', user_id).execute()
+
+        # Check if the update was successful
+        if response.get('status') == 200:
+            return jsonify({"message": "Profile updated successfully"}), 200
+        else:
+            return jsonify({"message": "Failed to update profile"}), 500
+    except Exception as e:
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
 # Route for registering a user
 @app.route('/api/register', methods=['POST'])
 def register():
