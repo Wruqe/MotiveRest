@@ -29,25 +29,45 @@ filter_service = FilterService()
 @app.route('/api/activities', methods=['POST'])
 def get_activities():
     data = request.json
+    print(data)
 
-    # Receive places from frontend
-    places = data.get('places', [])
-    budget = data.get('budget')
-    group_size = data.get('group_size')
+    # Extract the list of results from the frontend
+    results = data.get('results', [])
+
+    # Prepare a list of places for filtering
+    places = []
+
+    # Loop through each place in the results and extract the required fields
+    for place in results:
+        name = place.get('name', 'Unknown')
+        price_level = place.get('price_level', 0)  # Default to 0 if not available
+        group_size = place.get('group_size', 1)  # Default to 1 if not available
+        budget = place.get('budget', 1000)  # Default to 1000 if not available
+
+        # Construct a place object with the relevant fields
+        places.append({
+            'name': name,
+            'price_level': price_level,
+            'group_size': group_size,
+            'budget': budget,  # Include budget in each place object
+            'tags': place.get('types', [])  # Assuming 'tags' is part of the place object
+        })
 
     # Print to debug
     print("Received places:", places)
     for place in places:
-        print("Tags for place '{}': {}".format(place['name'], place['tags']))  # Ensure tags are an array
+        print(f"Tags for place '{place['name']}': {place['tags']}")  # Ensure tags are an array
 
-    # Apply filters for budget and group size
+    # Print the full data for debugging purposes
+    print("data", data)
+
+    # Apply filters for budget and group size using your filter service
     filtered_places = filter_service.apply_filters(places, budget, group_size)
 
     # Print the filtered places
     print("Filtered places:", filtered_places)
 
     return jsonify({'places': filtered_places})
-
 
 
 
