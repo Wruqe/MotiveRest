@@ -1,11 +1,13 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from agents.activity_agent import ActivityAgent
 from services.openai_service import generate_chat_response
 from utils.middleware import authenticate_supabase_token
 from auth.register_user import register_user
 from auth.login_user import login_user
 from supabase import create_client, Client
+from services.filter_service import FilterService  # Import the new filter service
+from services.google_maps_service import GoogleMapsService  # Import the Google Maps service
+
 
 app = Flask(__name__)
 CORS(app)
@@ -15,31 +17,38 @@ SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Instantiate the activity agent
-activity_agent = ActivityAgent()
-
 
 @app.route('/')
 def index():
     return jsonify({'message': 'Flask app is running!'})
 
+# Initialize services
+google_maps_service = GoogleMapsService()
+filter_service = FilterService()
+
 @app.route('/api/activities', methods=['POST'])
-@authenticate_supabase_token
 def get_activities():
     data = request.json
-    location = data.get('location')
+
+    # Receive places from frontend
+    places = data.get('places', [])
     budget = data.get('budget')
-    preferences = data.get('preferences')
-    activities = activity_agent.find_activities(location, preferences, budget)
-    return jsonify({'activities': activities})
+    group_size = data.get('group_size')
+
+    # Print to debug
+    print("Received places:", places)
+    for place in places:
+        print("Tags for place '{}': {}".format(place['name'], place['tags']))  # Ensure tags are an array
+
+    # Apply filters for budget and group size
+    filtered_places = filter_service.apply_filters(places, budget, group_size)
+
+    # Print the filtered places
+    print("Filtered places:", filtered_places)
+
+    return jsonify({'places': filtered_places})
 
 
-@app.route('/api/chatbot', methods=['POST'])
-@authenticate_supabase_token
-def chatbot():
-    user_input = request.json.get('message')
-    response = generate_chat_response(user_input)
-    return jsonify({'response': response})
 
 
 # Route for registering a user
